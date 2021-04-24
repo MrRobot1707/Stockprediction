@@ -4,6 +4,9 @@ import pandas as pd
 import cufflinks as cf
 import datetime
 
+from fbprophet import Prophet
+from fbprophet.plot import plot_plotly
+
 # App title
 st.markdown('''# Stock Price Prediction App''')
 
@@ -19,8 +22,8 @@ tickerSymbol = st.sidebar.selectbox('Stock Name', comp_list) # Select ticker sym
 StockData = yf.Ticker(tickerSymbol) # Get ticker data
 tickerDf = StockData.history(period='1d', start=start_date, end=end_date) #get the historical prices for this ticker
 
-
-
+year
+period = 2 *365
 
 # Company information
 company_logo = '<img src=%s>' % StockData.info['logo_url']
@@ -40,7 +43,7 @@ st.header('**Sector :%s**' % company_sector)
 
 # # Company data
 st.header('**Company data**')
-st.write(tickerDf)
+st.write(tickerDf.tail())
 
 
 st.header('**Close price of stock**')
@@ -51,6 +54,41 @@ st.header('**Volume of stock**')
 st.write('Volume measures the number of shares traded in a stock or contracts traded in futures or options. Volume can be an indicator of market strength, as rising markets on increasing volume are typically viewed as strong and healthy.')
 st.line_chart(tickerDf.Volume)
 
+
+
+@st.cache
+def load_data(ticker):
+	data = yf.download(ticker,start_date,end_date)
+	data.reset_index(inplace=True)
+	return data
+
+data_load_state = st.text("loding data...")
+data = load_data(tickerSymbol)
+
+data_load_state = st.text("loding data...done")
+
+st.write(data.tail())
+
+df_train = data[['Date','Close']]
+df_train = m.rename(columns={"Date":"ds","Close":"y"})
+
+
+m = Prophet()
+m.fit(df_train)
+future =m.make_future_dataframe(periods=period)
+forecast = m.predict(future)
+data_load_state = st.text("forecast data")
+
+st.write(forecast.tail())
+#Forces
+
+st.write(f'Forecast plot for {year} years')
+fig1 = plot_plotly(m, forecast)
+st.plotly_chart(fig1)
+
+st.write("Forecast components")
+fig2 = m.plot_components(forecast)
+st.write(fig2)
 
 # # Bollinger bands
 st.header('**Bollinger Bands**')
